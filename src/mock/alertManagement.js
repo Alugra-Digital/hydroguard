@@ -1,0 +1,187 @@
+// Mock data for AlertManagement page
+
+export const alertLevelMeta = {
+  siaga1: { label: 'Siaga 1', color: '#E11D48', bg: 'bg-siaga1' },
+  siaga2: { label: 'Siaga 2', color: '#F97316', bg: 'bg-siaga2' },
+  siaga3: { label: 'Siaga 3', color: '#FBBF24', bg: 'bg-siaga3' },
+}
+
+export const kecamatanList = [
+  'Mampang Prapatan',
+  'Kebayoran Lama',
+  'Kebayoran Baru',
+  'Pasar Minggu',
+  'Cilandak',
+  'Pancoran',
+  'Tebet',
+  'Setiabudi',
+  'Pesanggrahan',
+  'Jagakarsa',
+]
+
+export const activeAlertsData = [
+  {
+    id: 'ALT-2026-001', timestamp: '2026-05-27T09:45:00+07:00', level: 'siaga2',
+    location: 'Pela Mampang, Mampang Prapatan', kelurahan: 'Pela Mampang', kecamatan: 'Mampang Prapatan',
+    trigger: 'TMA melebihi batas Siaga 2 (215cm / ambang 200cm)', sensorId: 'SNS-001',
+    aiPrediction: { probability: 82, estimatedTime: 45, estimatedDepth: 35 },
+    status: 'active', acknowledgedBy: null, actions: [],
+  },
+  {
+    id: 'ALT-2026-002', timestamp: '2026-05-27T10:05:00+07:00', level: 'siaga1',
+    location: 'Cipulir, Kebayoran Lama', kelurahan: 'Cipulir', kecamatan: 'Kebayoran Lama',
+    trigger: 'TMA melebihi batas Siaga 1 (232cm / ambang 250cm mendekati)', sensorId: 'SNS-011',
+    aiPrediction: { probability: 86, estimatedTime: 30, estimatedDepth: 42 },
+    status: 'active', acknowledgedBy: null, actions: [],
+  },
+  {
+    id: 'ALT-2026-003', timestamp: '2026-05-27T10:15:00+07:00', level: 'siaga3',
+    location: 'Pejaten Timur, Pasar Minggu', kelurahan: 'Pejaten Timur', kecamatan: 'Pasar Minggu',
+    trigger: 'TMA Kali Ciliwung mendekati batas Siaga 2 (198cm)', sensorId: 'SNS-023',
+    aiPrediction: { probability: 70, estimatedTime: 60, estimatedDepth: 25 },
+    status: 'active', acknowledgedBy: null, actions: [],
+  },
+]
+
+export const historicalAlertsData = [
+  {
+    id: 'ALT-2026-H001', timestamp: '2026-05-26T06:00:00+07:00', level: 'siaga3',
+    location: 'Pela Mampang, Mampang Prapatan', kelurahan: 'Pela Mampang', kecamatan: 'Mampang Prapatan',
+    trigger: 'TMA mendekati ambang siaga', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-26T08:00:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H002', timestamp: '2026-05-26T07:07:00+07:00', level: 'siaga2',
+    location: 'Cipulir, Kebayoran Lama', kelurahan: 'Cipulir', kecamatan: 'Kebayoran Lama',
+    trigger: 'TMA melampaui ambang Siaga 2', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-26T10:07:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H003', timestamp: '2026-05-26T08:14:00+07:00', level: 'siaga1',
+    location: 'Rawajati, Pancoran', kelurahan: 'Rawajati', kecamatan: 'Pancoran',
+    trigger: 'TMA melampaui ambang Siaga 1', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-26T13:14:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H004', timestamp: '2026-05-25T06:21:00+07:00', level: 'siaga3',
+    location: 'Bukit Duri, Tebet', kelurahan: 'Bukit Duri', kecamatan: 'Tebet',
+    trigger: 'TMA mendekati ambang siaga', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-25T08:21:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H005', timestamp: '2026-05-25T07:28:00+07:00', level: 'siaga2',
+    location: 'Pejaten Timur, Pasar Minggu', kelurahan: 'Pejaten Timur', kecamatan: 'Pasar Minggu',
+    trigger: 'TMA melampaui ambang Siaga 2', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-25T11:28:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H006', timestamp: '2026-05-25T08:35:00+07:00', level: 'siaga1',
+    location: 'Ulujami, Pesanggrahan', kelurahan: 'Ulujami', kecamatan: 'Pesanggrahan',
+    trigger: 'TMA melampaui ambang Siaga 1', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-25T14:35:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H007', timestamp: '2026-05-24T06:42:00+07:00', level: 'siaga3',
+    location: 'Manggarai, Tebet', kelurahan: 'Manggarai', kecamatan: 'Tebet',
+    trigger: 'TMA mendekati ambang siaga', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-24T08:42:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H008', timestamp: '2026-05-24T07:49:00+07:00', level: 'siaga2',
+    location: 'Pondok Labu, Cilandak', kelurahan: 'Pondok Labu', kecamatan: 'Cilandak',
+    trigger: 'TMA melampaui ambang Siaga 2', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-24T11:49:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H009', timestamp: '2026-05-24T08:56:00+07:00', level: 'siaga1',
+    location: 'Pasar Minggu, Pasar Minggu', kelurahan: 'Pasar Minggu', kecamatan: 'Pasar Minggu',
+    trigger: 'TMA melampaui ambang Siaga 1', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-24T15:56:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H010', timestamp: '2026-05-23T06:03:00+07:00', level: 'siaga3',
+    location: 'Petogogan, Kebayoran Baru', kelurahan: 'Petogogan', kecamatan: 'Kebayoran Baru',
+    trigger: 'TMA mendekati ambang siaga', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-23T08:03:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H011', timestamp: '2026-05-23T07:10:00+07:00', level: 'siaga2',
+    location: 'Pela Mampang, Mampang Prapatan', kelurahan: 'Pela Mampang', kecamatan: 'Mampang Prapatan',
+    trigger: 'TMA melampaui ambang Siaga 2', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-23T11:10:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H012', timestamp: '2026-05-23T08:17:00+07:00', level: 'siaga1',
+    location: 'Cipulir, Kebayoran Lama', kelurahan: 'Cipulir', kecamatan: 'Kebayoran Lama',
+    trigger: 'TMA melampaui ambang Siaga 1', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-23T15:17:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H013', timestamp: '2026-05-22T06:24:00+07:00', level: 'siaga3',
+    location: 'Rawajati, Pancoran', kelurahan: 'Rawajati', kecamatan: 'Pancoran',
+    trigger: 'TMA mendekati ambang siaga', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-22T08:24:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H014', timestamp: '2026-05-22T07:31:00+07:00', level: 'siaga2',
+    location: 'Bukit Duri, Tebet', kelurahan: 'Bukit Duri', kecamatan: 'Tebet',
+    trigger: 'TMA melampaui ambang Siaga 2', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-22T12:31:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H015', timestamp: '2026-05-22T08:38:00+07:00', level: 'siaga1',
+    location: 'Pejaten Timur, Pasar Minggu', kelurahan: 'Pejaten Timur', kecamatan: 'Pasar Minggu',
+    trigger: 'TMA melampaui ambang Siaga 1', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-22T16:38:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H016', timestamp: '2026-05-21T06:45:00+07:00', level: 'siaga3',
+    location: 'Ulujami, Pesanggrahan', kelurahan: 'Ulujami', kecamatan: 'Pesanggrahan',
+    trigger: 'TMA mendekati ambang siaga', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-21T08:45:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H017', timestamp: '2026-05-21T07:52:00+07:00', level: 'siaga2',
+    location: 'Manggarai, Tebet', kelurahan: 'Manggarai', kecamatan: 'Tebet',
+    trigger: 'TMA melampaui ambang Siaga 2', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-21T12:52:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H018', timestamp: '2026-05-21T08:59:00+07:00', level: 'siaga1',
+    location: 'Pondok Labu, Cilandak', kelurahan: 'Pondok Labu', kecamatan: 'Cilandak',
+    trigger: 'TMA melampaui ambang Siaga 1', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-21T17:59:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H019', timestamp: '2026-05-20T06:06:00+07:00', level: 'siaga3',
+    location: 'Pasar Minggu, Pasar Minggu', kelurahan: 'Pasar Minggu', kecamatan: 'Pasar Minggu',
+    trigger: 'TMA mendekati ambang siaga', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-20T08:06:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+  {
+    id: 'ALT-2026-H020', timestamp: '2026-05-20T07:13:00+07:00', level: 'siaga2',
+    location: 'Petogogan, Kebayoran Baru', kelurahan: 'Petogogan', kecamatan: 'Kebayoran Baru',
+    trigger: 'TMA melampaui ambang Siaga 2', status: 'resolved',
+    acknowledgedBy: 'Operator Command Center', resolvedAt: '2026-05-20T12:13:00+07:00',
+    actions: ['Notifikasi dikirim', 'Pompa dikerahkan'],
+  },
+]

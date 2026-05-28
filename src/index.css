@@ -1,0 +1,444 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-root);
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track  { background: var(--scrollbar-track); }
+  ::-webkit-scrollbar-thumb  { background: var(--scrollbar-thumb); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+}
+
+/* ═══════════════════════════════════════
+   CSS VARIABLES — Dark (default)
+   ═══════════════════════════════════════ */
+:root {
+  --bg-base:    #070708;
+  --bg-sidebar: #0c0c0e;
+  --bg-card:    #0f0f12;
+  --bg-inner:   #0b0b0d;
+  --border-main:   #19191c;
+  --border-subtle: #1e1e23;
+  --border-medium: #2d2d33;
+  --text-root:     #a1a1aa;
+  --logo-color:    #ffffff;
+  --flow-line:     #1e1e24;
+  --scrollbar-track: #0f0f11;
+  --scrollbar-thumb: #27272a;
+  --scrollbar-hover: #3f3f46;
+}
+
+/* ═══════════════════════════════════════
+   CSS VARIABLES — Light (Slate Cool)
+   ═══════════════════════════════════════ */
+html[data-theme="light"] {
+  --bg-base:    #f8fafc;
+  --bg-sidebar: #f1f5f9;
+  --bg-card:    #ffffff;
+  --bg-inner:   #f8fafc;
+  --border-main:   transparent;
+  --border-subtle: rgba(203,213,225,0.45);
+  --border-medium: rgba(148,163,184,0.35);
+  --text-root:     #64748b;
+  --logo-color:    #0f172a;
+  --flow-line:     #cbd5e1;
+  --scrollbar-track: #f1f5f9;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-hover: #94a3b8;
+  color-scheme: light;
+}
+
+/* ── KPI card cycle animation ── */
+@keyframes kpi-exit {
+  from { opacity: 1; transform: translateY(0px); }
+  to   { opacity: 0; transform: translateY(-12px); }
+}
+@keyframes kpi-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0px); }
+}
+
+/* ── Flow diagram animation ── */
+@keyframes dash {
+  to { stroke-dashoffset: -20; }
+}
+.animate-dash {
+  stroke-dasharray: 5, 5;
+  animation: dash 1s linear infinite;
+}
+
+/* ── Horizontal pipeline flow animation ── */
+@keyframes flow-h {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(300%); }
+}
+.animate-flow-h { animation: flow-h 1.6s linear infinite; }
+
+/* Vertical pipeline flow */
+@keyframes flow-v {
+  from { stroke-dashoffset: 20; }
+  to   { stroke-dashoffset: -20; }
+}
+.animate-flow-v {
+  stroke-dasharray: 4 4;
+  animation: flow-v 1s linear infinite;
+}
+
+/* ══════════════════════════════════════════════
+   LIGHT MODE — class overrides
+   (html[data-theme="light"] ensures these always
+    win over Tailwind layered utilities)
+   ══════════════════════════════════════════════ */
+
+/* ── Page background: ocean gradient (wajib untuk glassmorphism) ── */
+html[data-theme="light"] body {
+  background: linear-gradient(135deg, #cae9ff 0%, #e0f4ff 35%, #b8dff7 65%, #90c9f0 100%) !important;
+  background-attachment: fixed !important;
+  min-height: 100vh;
+}
+
+/* ── Glassmorphism: root container transparan ── */
+html[data-theme="light"] .bg-\[var\(--bg-base\)\] {
+  background-color: transparent !important;
+}
+
+/* ── Glassmorphism: sidebar ── */
+html[data-theme="light"] aside {
+  background: rgba(255,255,255,0.55) !important;
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border-right: 1px solid rgba(255,255,255,0.6) !important;
+}
+
+/* ── Glassmorphism: header ── */
+html[data-theme="light"] header {
+  background: rgba(255,255,255,0.6) !important;
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  border-bottom: 1px solid rgba(255,255,255,0.5) !important;
+}
+
+/* ── Glassmorphism: cards & panels ── */
+html[data-theme="light"] .rounded-xl {
+  background-color: rgba(255,255,255,0.55) !important;
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  border: 1px solid rgba(255,255,255,0.65) !important;
+  box-shadow: 0 4px 24px rgba(0,77,130,0.08), 0 1px 4px rgba(0,0,0,0.04);
+}
+
+/* Reset elemen kecil — tidak pakai blur bawaan rounded-xl */
+html[data-theme="light"] .rounded-lg,
+html[data-theme="light"] .rounded-md,
+html[data-theme="light"] .rounded-full {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none;
+}
+
+/* ── Header chrome: search, bell, toggle, nav buttons ── */
+/* :not(.bg-white) — exclude tombol CTA (New Flow) agar tetap ocean blue */
+html[data-theme="light"] header .rounded-lg:not(.bg-white) {
+  background-color: rgba(255,255,255,0.65) !important;
+  border: 1px solid rgba(255,255,255,0.6) !important;
+}
+html[data-theme="light"] header input.rounded-lg {
+  background-color: rgba(255,255,255,0.7) !important;
+}
+html[data-theme="light"] header input.rounded-lg:focus {
+  background-color: rgba(255,255,255,0.9) !important;
+  border-color: #0077b6 !important;
+}
+
+/* ── Subheader section: tab container + time picker button ── */
+html[data-theme="light"] section .rounded-lg {
+  background-color: rgba(214,234,248,0.55) !important;
+  border: 1px solid rgba(255,255,255,0.55) !important;
+}
+
+/* ── Time picker dropdown popover (floating) ── */
+html[data-theme="light"] section .rounded-lg.shadow-xl {
+  background-color: rgba(240,249,255,0.92) !important;
+  backdrop-filter: blur(16px) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.3) !important;
+  border: 1px solid rgba(255,255,255,0.7) !important;
+  box-shadow: 0 8px 24px rgba(0,77,130,0.12), 0 2px 8px rgba(0,0,0,0.05) !important;
+}
+
+/* ── Second layer: inner card / sub-panel / form section ── */
+html[data-theme="light"] .bg-\[var\(--bg-inner\)\] {
+  background-color: rgba(214,234,248,0.55) !important;
+  backdrop-filter: blur(8px) saturate(1.2);
+  -webkit-backdrop-filter: blur(8px) saturate(1.2);
+  border: 1px solid rgba(255,255,255,0.55) !important;
+}
+html[data-theme="light"] .bg-\[var\(--bg-inner\)\]\/50 {
+  background-color: rgba(214,234,248,0.35) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Input & select: glass ringan agar text terbaca */
+html[data-theme="light"] input.bg-\[var\(--bg-base\)\],
+html[data-theme="light"] select.bg-\[var\(--bg-base\)\] {
+  background-color: rgba(255,255,255,0.65) !important;
+  border-color: rgba(203,213,225,0.6) !important;
+}
+html[data-theme="light"] input.bg-\[var\(--bg-base\)\]:focus,
+html[data-theme="light"] select.bg-\[var\(--bg-base\)\]:focus {
+  background-color: rgba(255,255,255,0.85) !important;
+  border-color: #0077b6 !important;
+}
+
+/* ── Backgrounds ── */
+html[data-theme="light"] .bg-zinc-950        { background-color: rgba(214,234,248,0.45) !important; }
+html[data-theme="light"] .bg-zinc-950\/40    { background-color: rgba(214,234,248,0.3) !important; }
+html[data-theme="light"] .bg-zinc-900        { background-color: rgba(186,220,245,0.45) !important; }
+html[data-theme="light"] .bg-zinc-900\/60    { background-color: rgba(214,234,248,0.6) !important; }
+html[data-theme="light"] .bg-zinc-900\/40    { background-color: rgba(186,220,245,0.3) !important; }
+html[data-theme="light"] .bg-zinc-900\/30    { background-color: rgba(186,220,245,0.2) !important; }
+html[data-theme="light"] .bg-black           { background-color: rgba(255,255,255,0.7) !important; }
+html[data-theme="light"] .bg-black\/80       { background-color: rgba(255,255,255,0.82) !important; }
+
+/* ── Primary: Indigo-600 ── */
+/* Tombol CTA (New Flow, Save, Deploy) + sidebar active indicator */
+html[data-theme="light"] .bg-white           { background-color: #0077b6 !important; }
+html[data-theme="light"] .hover\:bg-zinc-200:hover { background-color: #005f92 !important; }
+
+/* Active state: tab, toggle, filter chip */
+html[data-theme="light"] .bg-zinc-800        { background-color: #0077b6 !important; }
+
+/* Text di atas indigo harus tetap putih */
+html[data-theme="light"] .bg-zinc-800.text-white  { color: #ffffff !important; }
+html[data-theme="light"] .bg-zinc-800 .text-white { color: #ffffff !important; }
+html[data-theme="light"] .bg-white.text-black     { color: #ffffff !important; }
+
+/* Sidebar active item: indigo-50 tint + indigo icon */
+html[data-theme="light"] .bg-zinc-800\/40    { background-color: rgba(0,119,182,0.08) !important; }
+html[data-theme="light"] .bg-zinc-800\/40.text-white { color: #005f92 !important; }
+html[data-theme="light"] aside .bg-zinc-800\/40 { border-color: rgba(0,119,182,0.25) !important; }
+
+/* bg-[#0b0b0d]/50 — dot-grid overlay & flow diagram bg */
+html[data-theme="light"] .bg-\[\#0b0b0d\]\/50 { background-color: rgba(241,245,249,0.85) !important; }
+
+/* Dot-grid radial pattern */
+html[data-theme="light"] .bg-\[radial-gradient\(\#1e1e24_1px\,transparent_1px\)\] {
+  background-image: radial-gradient(#cbd5e1 1px, transparent 1px) !important;
+}
+
+/* Status / badge backgrounds */
+html[data-theme="light"] .bg-rose-950\/50      { background-color: #fff1f2 !important; }
+html[data-theme="light"] .bg-amber-950\/50     { background-color: #fffbeb !important; }
+html[data-theme="light"] .bg-sky-950\/50       { background-color: #f0f9ff !important; }
+html[data-theme="light"] .bg-emerald-950\/40   { background-color: rgba(209,250,229,0.7)  !important; }
+html[data-theme="light"] .bg-emerald-950\/60   { background-color: rgba(209,250,229,0.85) !important; }
+html[data-theme="light"] .border-emerald-900\/40 { border-color: rgba(16,185,129,0.3)     !important; }
+html[data-theme="light"] .bg-amber-950\/60     { background-color: rgba(254,243,199,0.85) !important; }
+html[data-theme="light"] .bg-emerald-950\/80   { background-color: rgba(209,250,229,0.95) !important; }
+html[data-theme="light"] .bg-rose-950\/40      { background-color: rgba(255,241,242,0.8) !important; }
+html[data-theme="light"] .bg-amber-950\/40     { background-color: rgba(255,251,235,0.8) !important; }
+html[data-theme="light"] .bg-indigo-500        { background-color: #0077b6 !important; }
+
+/* ── Borders ── */
+html[data-theme="light"] .border-zinc-800              { border-color: #cbd5e1 !important; }
+html[data-theme="light"] .border-zinc-700              { border-color: #94a3b8 !important; }
+html[data-theme="light"] .hover\:border-zinc-700:hover { border-color: #94a3b8 !important; }
+html[data-theme="light"] .hover\:border-zinc-800:hover { border-color: #cbd5e1 !important; }
+html[data-theme="light"] .focus\:border-zinc-500:focus { border-color: #0077b6 !important; }
+html[data-theme="light"] .border-rose-900\/50          { border-color: rgba(244,63,94,0.25) !important; }
+html[data-theme="light"] .border-amber-900\/30         { border-color: rgba(217,119,6,0.25) !important; }
+html[data-theme="light"] .border-sky-900\/50           { border-color: rgba(2,132,199,0.25) !important; }
+html[data-theme="light"] .border-emerald-500\/30       { border-color: rgba(16,185,129,0.4) !important; }
+html[data-theme="light"] .border-amber-500\/30         { border-color: rgba(245,158,11,0.4) !important; }
+html[data-theme="light"] .border-emerald-500\/50       { border-color: rgba(16,185,129,0.5) !important; }
+
+/* ── Text ── */
+html[data-theme="light"] .text-white   { color: #0f172a !important; }
+html[data-theme="light"] .text-zinc-200 { color: #334155 !important; }
+html[data-theme="light"] .text-zinc-300 { color: #475569 !important; }
+html[data-theme="light"] .text-zinc-400 { color: #64748b !important; }
+html[data-theme="light"] .text-zinc-500 { color: #64748b !important; }
+html[data-theme="light"] .text-zinc-600 { color: #475569 !important; }
+html[data-theme="light"] .text-zinc-700 { color: #334155 !important; }
+html[data-theme="light"] .text-black   { color: #ffffff !important; }
+html[data-theme="light"] .text-emerald-300  { color: #059669 !important; }
+html[data-theme="light"] .text-emerald-400  { color: #059669 !important; }
+/* Amber & Orange */
+html[data-theme="light"] .text-amber-300    { color: #92400e !important; }
+html[data-theme="light"] .text-amber-400    { color: #92400e !important; }
+html[data-theme="light"] .text-amber-500    { color: #78350f !important; }
+html[data-theme="light"] .text-orange-400   { color: #c2410c !important; }
+html[data-theme="light"] .text-orange-500   { color: #9a3412 !important; }
+/* Rose / Red */
+html[data-theme="light"] .text-red-400      { color: #b91c1c !important; }
+html[data-theme="light"] .text-red-500      { color: #991b1b !important; }
+html[data-theme="light"] .text-rose-400     { color: #be123c !important; }
+html[data-theme="light"] .text-rose-500     { color: #9f1239 !important; }
+/* Blue / Sky / Indigo / Purple / Cyan — previously missing */
+html[data-theme="light"] .text-blue-400     { color: #1d4ed8 !important; }
+html[data-theme="light"] .text-blue-500     { color: #1e40af !important; }
+html[data-theme="light"] .text-sky-400      { color: #0369a1 !important; }
+html[data-theme="light"] .text-sky-500      { color: #0284c7 !important; }
+html[data-theme="light"] .text-indigo-400   { color: #3730a3 !important; }
+html[data-theme="light"] .text-indigo-500   { color: #312e81 !important; }
+html[data-theme="light"] .text-purple-400   { color: #7e22ce !important; }
+html[data-theme="light"] .text-purple-500   { color: #6b21a8 !important; }
+html[data-theme="light"] .text-violet-400   { color: #6d28d9 !important; }
+html[data-theme="light"] .text-cyan-400     { color: #0e7490 !important; }
+html[data-theme="light"] .text-cyan-500     { color: #0e7490 !important; }
+html[data-theme="light"] .text-teal-400     { color: #0f766e !important; }
+html[data-theme="light"] .text-pink-400     { color: #9d174d !important; }
+/* Emerald-500 (KPI sub-labels) */
+html[data-theme="light"] .text-emerald-500  { color: #059669 !important; }
+
+/* ── Missing badge backgrounds ── */
+html[data-theme="light"] .bg-orange-950\/50  { background-color: rgba(255,247,237,0.9) !important; }
+html[data-theme="light"] .border-orange-900\/50 { border-color: rgba(194,65,12,0.25) !important; }
+/* Blue badges */
+html[data-theme="light"] .bg-blue-950\/50   { background-color: rgba(239,246,255,0.9) !important; }
+html[data-theme="light"] .border-blue-900\/50  { border-color: rgba(29,78,216,0.25) !important; }
+html[data-theme="light"] .bg-blue-950\/40   { background-color: rgba(239,246,255,0.8) !important; }
+html[data-theme="light"] .border-blue-900\/40  { border-color: rgba(29,78,216,0.2) !important; }
+/* Purple badges */
+html[data-theme="light"] .bg-purple-950\/50 { background-color: rgba(250,245,255,0.9) !important; }
+html[data-theme="light"] .border-purple-900\/50 { border-color: rgba(126,34,206,0.25) !important; }
+/* Cyan badges */
+html[data-theme="light"] .bg-cyan-950\/50   { background-color: rgba(236,254,255,0.9) !important; }
+html[data-theme="light"] .border-cyan-900\/50  { border-color: rgba(14,116,144,0.25) !important; }
+/* Emerald-950/50 (resource management deploy badge) */
+html[data-theme="light"] .bg-emerald-950\/50   { background-color: rgba(209,250,229,0.9) !important; }
+html[data-theme="light"] .border-emerald-900\/50 { border-color: rgba(16,185,129,0.3) !important; }
+/* zinc-900/50 — driver tags */
+html[data-theme="light"] .bg-zinc-900\/50    { background-color: rgba(186,220,245,0.4) !important; }
+
+/* ── Hover text ── */
+html[data-theme="light"] .hover\:text-white:hover    { color: #0f172a !important; }
+html[data-theme="light"] .hover\:text-zinc-300:hover { color: #334155 !important; }
+html[data-theme="light"] .hover\:text-zinc-200:hover { color: #1e293b !important; }
+
+/* ── Hover bg ── */
+html[data-theme="light"] .hover\:bg-zinc-900:hover    { background-color: #f1f5f9 !important; }
+html[data-theme="light"] .hover\:bg-zinc-700:hover    { background-color: #94a3b8 !important; }
+html[data-theme="light"] .hover\:bg-zinc-900\/30:hover { background-color: rgba(0,119,182,0.06) !important; }
+html[data-theme="light"] .hover\:bg-zinc-900\/40:hover { background-color: rgba(0,119,182,0.05) !important; }
+
+/* ── Table — hapus semua sisa border ── */
+html[data-theme="light"] .divide-\[var\(--border-main\)\] > :not([hidden]) ~ :not([hidden]) {
+  border-top-color: transparent !important;
+}
+html[data-theme="light"] .border-collapse td,
+html[data-theme="light"] .border-collapse th {
+  border-color: transparent !important;
+}
+html[data-theme="light"] table.border-collapse {
+  border-color: transparent !important;
+}
+
+/* ── Shadows ── */
+html[data-theme="light"] .shadow-xl         { box-shadow: 0 10px 25px -5px rgba(15,23,42,0.08), 0 4px 10px -6px rgba(15,23,42,0.04) !important; }
+html[data-theme="light"] .shadow-black\/80  { box-shadow: 0 10px 25px -5px rgba(15,23,42,0.1) !important; }
+
+/* ── Inputs & Selects ── */
+html[data-theme="light"] input,
+html[data-theme="light"] select {
+  color-scheme: light;
+  color: #0f172a;
+}
+html[data-theme="light"] input::placeholder { color: #94a3b8; }
+
+/* ══════════════════════════════════════════════
+   LEAFLET — dark theme (default)
+   ══════════════════════════════════════════════ */
+.leaflet-container {
+  background: var(--bg-inner);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+.leaflet-control-attribution {
+  background: rgba(7,7,8,0.75) !important;
+  color: #3f3f46 !important;
+  font-size: 9px !important;
+}
+.leaflet-control-attribution a { color: #52525b !important; }
+
+.leaflet-control-zoom {
+  border: 1px solid #27272a !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+.leaflet-control-zoom a {
+  background: #0f0f12 !important;
+  color: #a1a1aa !important;
+  border-bottom: 1px solid #27272a !important;
+  width: 28px !important;
+  height: 28px !important;
+  line-height: 28px !important;
+  font-size: 16px !important;
+}
+.leaflet-control-zoom a:hover  { background: #18181b !important; color: #ffffff !important; }
+.leaflet-control-zoom-out       { border-bottom: none !important; }
+
+/* ── Leaflet — light theme ── */
+html[data-theme="light"] .leaflet-control-zoom              { border-color: #e2e8f0 !important; }
+html[data-theme="light"] .leaflet-control-zoom a            { background: #ffffff !important; color: #475569 !important; border-color: #e2e8f0 !important; }
+html[data-theme="light"] .leaflet-control-zoom a:hover      { background: #f1f5f9 !important; color: #0f172a !important; }
+html[data-theme="light"] .leaflet-control-attribution       { background: rgba(255,255,255,0.85) !important; color: #94a3b8 !important; }
+html[data-theme="light"] .leaflet-control-attribution a     { color: #64748b !important; }
+
+/* ── Leaflet Popup — dark theme ── */
+.leaflet-popup-content-wrapper {
+  background: #0f0f12 !important;
+  border: 1px solid #27272a !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+  padding: 0 !important;
+}
+.leaflet-popup-content {
+  margin: 0 !important;
+  width: auto !important;
+}
+.leaflet-popup-tip-container { display: none !important; }
+.leaflet-popup-close-button { display: none !important; }
+
+html[data-theme="light"] .leaflet-popup-content-wrapper {
+  background: rgba(255,255,255,0.95) !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 8px 32px rgba(15,23,42,0.12) !important;
+}
+
+/* ── Tooltip ── */
+.hg-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.hg-tooltip::before { display: none !important; }
+.hg-tooltip-inner {
+  background: #0f0f12;
+  border: 1px solid #27272a;
+  color: #a1a1aa;
+  font-size: 10px;
+  font-family: ui-monospace, monospace;
+  padding: 6px 10px;
+  border-radius: 6px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.hg-tooltip-name { color: #e4e4e7; font-weight: 700; margin-bottom: 2px; }
+
+html[data-theme="light"] .hg-tooltip-inner {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px);
+  border-color: rgba(255,255,255,0.6);
+  color: #475569;
+}
+html[data-theme="light"] .hg-tooltip-name { color: #0f172a; }
+
+/* Leaflet container tetap opaque agar peta terbaca */
+html[data-theme="light"] .leaflet-container {
+  background: #cae9ff !important;
+}
