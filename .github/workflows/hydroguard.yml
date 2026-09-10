@@ -18,6 +18,8 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Build di VPS bisa lama; batasi supaya job tidak menggantung berjam-jam.
+    timeout-minutes: 45
     steps:
       # Tidak ada langkah build di runner: image dibangun di VPS oleh
       # `docker compose up -d --build`, jadi build di sini cuma dobel kerja.
@@ -33,9 +35,10 @@ jobs:
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
           ssh -i ~/.ssh/deploy -o StrictHostKeyChecking=accept-new \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=20 \
             "$VPS_USER@$VPS_HOST" \
             "set -e
-             git -C '$VPS_PATH' pull --ff-only
+             git -C '$VPS_PATH' pull --ff-only origin main
              cd '$VPS_STACK'
              docker compose up -d --build --no-deps hydroguard
              docker compose ps"
