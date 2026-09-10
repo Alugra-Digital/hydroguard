@@ -1,0 +1,41 @@
+name: hydroguard
+
+# Deploy otomatis ke VPS. Pola sama dengan repo pushhub.
+# Secret yang dipakai (Settings -> Secrets and variables -> Actions):
+#   VPS_HOST     alamat server
+#   VPS_USER     user SSH (pemilik folder project, bukan root)
+#   VPS_SSH_KEY  private key OpenSSH, utuh termasuk baris BEGIN/END
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Satu deploy sekaligus; push berikutnya menunggu, bukan membatalkan yang jalan.
+concurrency:
+  group: deploy-hydroguard
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Tidak ada langkah build di runner: image dibangun di VPS oleh
+      # `docker compose up -d --build`, jadi build di sini cuma dobel kerja.
+      - name: Deploy lewat SSH
+        env:
+          VPS_PATH: /home/alugra/apps/hydroguard
+          VPS_STACK: /home/alugra/apps/hydroguard
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          ssh -i ~/.ssh/deploy -o StrictHostKeyChecking=accept-new \
+            "$VPS_USER@$VPS_HOST" \
+            "set -e
+             git -C '$VPS_PATH' pull --ff-only
+             cd '$VPS_STACK'
+             docker compose up -d --build --no-deps hydroguard
+             docker compose ps"
