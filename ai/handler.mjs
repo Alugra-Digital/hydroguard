@@ -6,6 +6,11 @@
  * Penelusuran data (alat `baca_data`) dijalankan di sisi peramban, karena
  * seluruh data aplikasi ini memang sudah ada di sana (src/mock). Lihat
  * src/components/ChatAI.tsx.
+ *
+ * Satu route lagi menumpang di sini: /api/cari — pencarian web untuk tombol
+ * "Internet" di widget chat. Alasannya sama, CORS: mesin pencari tidak bisa
+ * dipanggil langsung dari peramban. Gerbang relevansinya ada di peramban
+ * (ChatAI.tsx), yang di sini cuma mengambil dan merapikan hasilnya.
  */
 const baseUrl = () => (process.env.OLLAMA_BASE_URL || 'https://ollama.com').replace(/\/$/, '')
 const model = () => process.env.OLLAMA_MODEL || 'gpt-oss:120b-cloud'
@@ -32,14 +37,68 @@ const baca = (req) =>
     req.on('error', reject)
   })
 
+/* ── pencarian web (dipinjam dari pushhub, api/src/ai.ts) ────────────────── */
+
+/** Mesin pencari tanpa kunci; bisa ditukar lewat env kalau diblokir. */
+const cariUrl = () => process.env.AI_SEARCH_URL || 'https://lite.duckduckgo.com/lite/?q='
+/** Hasil yang dibawa ke model. Cukup untuk merangkum, tidak membanjiri konteks. */
+const MAX_HASIL = 6
+
+const lepasTag = (t) =>
+  t.replace(/<[^>]*>/g, '')
+    .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'")
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+/** DuckDuckGo membungkus tautan keluar; yang dipakai parameter uddg-nya. */
+const bukaBungkus = (u) => {
+  const m = u.match(/[?&]uddg=([^&]+)/)
+  return m ? decodeURIComponent(m[1]) : u
+}
+
+/**
+ * Judul + tautan + cuplikan dari halaman hasil. Parser seadanya, sengaja:
+ * yang dibaca cuma tiga potong per hasil.
+ *
+ * ponytail: regex atas HTML satu situs. Kalau tata letaknya berubah, hasilnya
+ * kosong dan model bilang tidak menemukan apa-apa — bukan jawaban ngawur.
+ */
+export function ringkasHasil(html) {
+  const tautan = [...html.matchAll(/<a[^>]+class=['"]result-link['"][^>]*href=['"]([^'"]+)['"][^>]*>([\s\S]*?)<\/a>/gi)]
+  const tautanAlt = tautan.length
+    ? tautan
+    : [...html.matchAll(/<a[^>]+href=['"]([^'"]+)['"][^>]*class=['"]result-link['"][^>]*>([\s\S]*?)<\/a>/gi)]
+  const cuplik = [...html.matchAll(/class=['"]result-snippet['"][^>]*>([\s\S]*?)<\/td>/gi)].map((m) => lepasTag(m[1]))
+  return tautanAlt.slice(0, MAX_HASIL).map((m, i) =>
+    `${i + 1}. ${lepasTag(m[2])}\n   ${bukaBungkus(m[1])}\n   ${(cuplik[i] || '').slice(0, 400)}`,
+  ).join('\n')
+}
+
 /**
  * Middleware Node biasa — dipakai vite.config.ts (dev & preview) dan
  * server.mjs (produksi). Mengembalikan true kalau permintaannya ia tangani.
  */
 export async function tanganiAi(req, res) {
-  if (req.url !== '/api/chat' && req.url !== '/api/chat/status') return false
+  const jalur = req.url.split('?')[0]
+  if (jalur !== '/api/chat' && jalur !== '/api/chat/status' && jalur !== '/api/cari') return false
 
-  if (req.url === '/api/chat/status') {
+  if (jalur === '/api/cari') {
+    const kueri = new URL(req.url, 'http://x').searchParams.get('q') || ''
+    if (!kueri.trim()) return kirimJson(res, 400, { error: 'kueri kosong' }), true
+    try {
+      const r = await fetch(cariUrl() + encodeURIComponent(kueri), {
+        headers: { 'user-agent': 'Mozilla/5.0 (compatible; hydroguard)' },
+        signal: AbortSignal.timeout(20_000),
+      })
+      kirimJson(res, 200, { hasil: ringkasHasil(await r.text()) })
+    } catch (e) {
+      kirimJson(res, 502, { error: e?.message || 'pencarian gagal' })
+    }
+    return true
+  }
+
+  if (jalur === '/api/chat/status') {
     kirimJson(res, 200, { siap: aiSiap(), model: model() })
     return true
   }

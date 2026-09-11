@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bot, History, Plus, Send, Sparkles, Trash2, User, X } from 'lucide-react'
+import { Bot, Globe, History, Plus, Send, Sparkles, Trash2, User, X } from 'lucide-react'
 import * as mock from '../mock'
 import { cn } from '../utils/cn'
 
@@ -13,6 +13,10 @@ import { cn } from '../utils/cn'
  * satu-satunya alasan proxy itu ada adalah menyembunyikan kunci API.
  *
  * Alatnya hanya MEMBACA: tidak ada jalur mengubah data dari sini.
+ *
+ * Mengikuti pembaruan pushhub: jawaban boleh berupa grafik (blok ```grafik),
+ * dan ada tombol "Internet" yang bergerbang — pencarian luar hanya dijalankan
+ * kalau pertanyaannya memang urusan kebencanaan/aplikasi ini.
  */
 
 type Langkah = { nama: string; bytes: number }
@@ -21,6 +25,7 @@ type Thread = { id: string; title: string; updatedAt: number; messages: Pesan[] 
 
 const CONTOH = [
   'Kelurahan mana yang risikonya paling tinggi?',
+  'Buat grafik komposisi status sensor',
   'Sensor apa saja yang statusnya bermasalah?',
   'Ringkas kesiapan pompa dan perahu',
 ]
@@ -68,6 +73,42 @@ const ALAT = [
   },
 ]
 
+/**
+ * Alat kedua, hanya ditawarkan kalau penanya menyalakan tombol "Internet" DAN
+ * pertanyaannya masih urusan kebencanaan/aplikasi ini (lihat `relevanInternet`).
+ * Isinya cuma hasil pencarian — tidak ada jalur menulis ke mana pun.
+ */
+const ALAT_WEB = {
+  type: 'function',
+  function: {
+    name: 'cari_internet',
+    description:
+      'Cari rujukan di internet soal kebencanaan dan banjir (prakiraan cuaca BMKG, prosedur BNPB/BPBD, ' +
+      'standar tinggi muka air, teknis sensor & pompa). Balasannya judul + cuplikan + tautan. ' +
+      'Bukan untuk data aplikasi ini — itu pakai baca_data.',
+    parameters: {
+      type: 'object',
+      properties: { kueri: { type: 'string', description: 'Kata kunci pencarian, ringkas.' } },
+      required: ['kueri'],
+    },
+  },
+}
+
+/**
+ * Gerbang relevansi pencarian internet. Bukan model yang memutuskan, melainkan
+ * kode: tombol internet tidak boleh berubah jadi mesin pencari umum di dalam
+ * aplikasi kebencanaan.
+ *
+ * ponytail: daftar kata kunci, bukan pengklasifikasi. Kalau ada pertanyaan sah
+ * yang tertolak, tambahkan katanya di sini — jangan ganti dengan panggilan
+ * model kedua.
+ */
+const TOPIK =
+  /(banjir|hidrolog|hujan|curah|cuaca|iklim|musim|bmkg|bnpb|bpbd|basarnas|pusdalops|bencana|darurat|siaga|waspada|evakuasi|pengungsi|posko|logistik|relawan|sungai|kali|ciliwung|pesanggrahan|krukut|drainase|gorong|saluran|kanal|waduk|situ|embung|bendung|pintu air|tanggul|pompa|perahu|sensor|tma|tinggi muka air|muka air|debit|telemetri|iot|lidar|radar|satelit|peta|gis|koordinat|kelurahan|kecamatan|jakarta|dki|rob|pasang|genangan|longsor|mitigasi|peringatan dini|early warning|sop|prosedur|standar|regulasi|permen|perka|cctv|kamera|jaringan|api|dashboard|hydroguard)/i
+
+/** Pertanyaannya masih seputar kebencanaan/aplikasi ini? */
+const relevanInternet = (teks: string) => TOPIK.test(String(teks || ''))
+
 /** Batas ukuran satu jawaban alat — jendela konteks bukan tempat menampung semuanya. */
 const MAX_ISI = 48_000
 const MAX_RONDE = 6
@@ -80,7 +121,16 @@ const MAX_RONDE = 6
  */
 function hitungan(data: unknown): string | null {
   const hit = new Map<string, number>()
+  // Sebaran nilai per field: bahan langsung untuk grafik komposisi ("berapa
+  // sensor per status"). Tanpa ini model harus menghitung sendiri dari JSON —
+  // persis pekerjaan yang tidak bisa dipercayakan padanya.
+  const sebar = new Map<string, Map<string, number>>()
   const naik = (k: string, n: number) => hit.set(k, (hit.get(k) || 0) + n)
+  const naikSebar = (k: string, nilai: string) => {
+    const m = sebar.get(k) || new Map<string, number>()
+    m.set(nilai, (m.get(nilai) || 0) + 1)
+    sebar.set(k, m)
+  }
   const jalan = (v: any, j: string) => {
     if (Array.isArray(v)) {
       naik(j + '[]', v.length)
@@ -88,6 +138,10 @@ function hitungan(data: unknown): string | null {
     } else if (v && typeof v === 'object') {
       for (const [k, x] of Object.entries(v)) jalan(x, j ? `${j}.${k}` : k)
     } else if (v !== null && v !== undefined && v !== '' && !j.endsWith('[]')) {
+      // Nilai pendek di dalam array = kandidat kategori (status, tingkat,
+      // kondisi). Yang panjang/angka dilewati: nama sensor bukan kategori.
+      if (j.includes('[]') && (typeof v === 'boolean' || (typeof v === 'string' && v.length <= 24)))
+        naikSebar(j, String(v))
       naik(j, 1)
     }
   }
@@ -97,13 +151,52 @@ function hitungan(data: unknown): string | null {
     .filter(([, n]) => n > 0)
     .slice(0, 60)
     .map(([k, n]) => `  ${k || '(akar)'}: ${n} ${k.endsWith('[]') ? 'entri' : 'terisi'}`)
-  return `Hitungan yang sudah dihitung untukmu — PAKAI angka ini, jangan menghitung entri satu per satu:\n${baris.join('\n')}`
+  // Cuma field yang benar-benar berperan sebagai kategori: lebih dari satu
+  // nilai berbeda, tapi tidak sebanyak entrinya (itu tandanya nama).
+  const kategori = [...sebar]
+    .filter(([, m]) => {
+      const total = [...m.values()].reduce((a, n) => a + n, 0)
+      return m.size > 1 && m.size <= 12 && m.size * 2 <= total
+    })
+    .slice(0, 12)
+    .map(([k, m]) =>
+      `  ${k}: ` + [...m].sort((a, b) => b[1] - a[1]).map(([v, n]) => `${v}=${n}`).join(', '),
+    )
+  return (
+    `Hitungan yang sudah dihitung untukmu — PAKAI angka ini, jangan menghitung entri satu per satu:\n${baris.join('\n')}` +
+    (kategori.length ? `\n\nSebaran nilai (siap dipakai sebagai data grafik):\n${kategori.join('\n')}` : '')
+  )
 }
 
-function jalankanAlat(argsMentah: any): { nama: string; isi: string } {
+/** Pencarian web lewat proxy — mesin pencari tidak mengirim header CORS. */
+async function cariWeb(kueri: string): Promise<string> {
+  try {
+    const r = await fetch('/api/cari?q=' + encodeURIComponent(kueri))
+    const d = await r.json()
+    if (!r.ok) return `Pencarian gagal: ${d?.error || r.status}. Jawab dengan data aplikasi saja.`
+    return d.hasil
+      ? `Hasil pencarian "${kueri}" (dari internet, bukan data aplikasi ini — sebutkan tautannya saat mengutip):\n${d.hasil}`
+      : `Pencarian "${kueri}" tidak mengembalikan hasil yang bisa dibaca.`
+  } catch (e: any) {
+    return `Pencarian gagal: ${e?.message || 'jaringan'}. Jawab dengan data aplikasi saja.`
+  }
+}
+
+async function jalankanAlat(namaAlat: string, argsMentah: any, web: boolean): Promise<{ nama: string; isi: string }> {
   let args: any = argsMentah
   if (typeof args === 'string') {
     try { args = JSON.parse(args) } catch { args = {} }
+  }
+  if (namaAlat === 'cari_internet') {
+    const kueri = String(args?.kueri || '').trim()
+    if (!web)
+      return {
+        nama: 'internet: ditolak',
+        isi: 'Galat: pencarian internet sedang dimatikan atau pertanyaannya di luar lingkup aplikasi. ' +
+             'Jawab dengan data aplikasi saja, dan sebutkan tombol "Internet" kalau memang butuh rujukan luar.',
+      }
+    if (!kueri) return { nama: 'internet: kosong', isi: 'Galat: kueri pencarian kosong.' }
+    return { nama: `internet: ${kueri}`, isi: await cariWeb(kueri) }
   }
   const kunci = String(args?.bagian || '')
   const b = BAGIAN[kunci]
@@ -140,9 +233,38 @@ Daftar satu kolom cukup butir biasa.
 
 Sebut MENU-nya, bukan nama teknis data: "menu Sensor Network", "halaman Alert Management",
 "peta di Command Center". Jangan menjelaskan bahwa kamu memakai alat atau dari mana data diambil —
-cukup jawabannya.`
+cukup jawabannya.
 
-/* ---------- perender markdown (dari pushhub, tanpa blok grafik) ---------- */
+Kalau penanya menyebut grafik, chart, diagram, atau visual, JAWAB DENGAN GRAFIK — jangan menolak.
+Bahan angkanya ada di blok "Sebaran nilai" pada jawaban alat; kalau belum cukup, hitung dari daftar
+yang kamu baca — tetapi jangan mengarang. Bentuknya blok kode berlabel grafik, isinya JSON:
+
+\`\`\`grafik
+{"tipe":"donat","judul":"Status sensor","data":[{"label":"normal","nilai":22},{"label":"siaga","nilai":6}]}
+\`\`\`
+
+tipe: "batang" (perbandingan antar nama), "donat" (komposisi dari satu total), "area" (deret
+berurut, mis. ketinggian air per jam — urut dari lama ke baru). Maksimum 12 titik data, nilai harus
+angka, dan angkanya WAJIB dari data yang kamu baca. Beri satu kalimat penjelasan di luar blok;
+jangan mengulang seluruh angkanya sebagai daftar kalau sudah ada grafiknya.`
+
+/** Ditempel ke SISTEM saat tombol internet menyala dan pertanyaannya relevan. */
+const TAMBAHAN_WEB = `
+
+Penanya menyalakan pencarian internet, jadi kamu punya alat kedua: cari_internet. Pakai untuk
+rujukan luar (prakiraan cuaca, prosedur BNPB/BPBD, standar teknis, dokumentasi alat). Data lapangan
+tetap dari baca_data — jangan pernah mengambil angka atau nama dari hasil pencarian. Sebutkan tautan
+sumber saat mengutip hasil internet, dan bedakan dengan jelas mana data aplikasi ini dan mana yang
+dari luar.`
+
+/** Tombol menyala tapi pertanyaannya di luar lingkup: alatnya tidak diberikan. */
+const TOLAK_WEB = `
+
+Penanya menyalakan pencarian internet, tetapi pertanyaan ini di luar lingkup aplikasi, jadi
+pencariannya tidak dijalankan. Katakan terus terang bahwa pertanyaannya tidak relevan dengan
+HydroGuard, lalu tawarkan pertanyaan yang bisa kamu jawab.`
+
+/* ---------- perender markdown (dari pushhub, termasuk blok grafik) ---------- */
 
 function Markdown({ isi }: { isi: string }) {
   const bagian = isi.split(/```/)
@@ -150,12 +272,146 @@ function Markdown({ isi }: { isi: string }) {
     <div className="space-y-2 text-sm leading-relaxed">
       {bagian.map((b, i) =>
         i % 2 === 1 ? (
-          <pre key={i} className="overflow-x-auto rounded-md bg-[var(--bg-inner)] p-3 font-mono text-xs">
-            {b.replace(/^\w*\n/, '')}
-          </pre>
+          /^grafik\b/.test(b.trim()) ? (
+            <GrafikBlok key={i} isi={b.replace(/^\s*grafik\s*/, '')} />
+          ) : (
+            <pre key={i} className="overflow-x-auto rounded-md bg-[var(--bg-inner)] p-3 font-mono text-xs">
+              {b.replace(/^\w*\n/, '')}
+            </pre>
+          )
         ) : (
           <Teks key={i} isi={b} />
         ),
+      )}
+    </div>
+  )
+}
+
+/* ---------- grafik ---------- */
+
+type Titik = { label: string; nilai: number }
+
+/** Mulai dari biru HydroGuard, lalu warna yang jelas berbeda — dua nada biru
+ *  berdampingan tidak terbaca sebagai dua kategori di donat kecil. */
+const WARNA = ['#0ea5e9', '#6366f1', '#22d3ee', '#f59e0b', '#14b8a6', '#f43f5e']
+
+const rapi = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
+
+/** Batang mendatar berperingkat — perbandingan antar nama. */
+function Batang({ data }: { data: Titik[] }) {
+  const maks = Math.max(...data.map((d) => d.nilai), 1)
+  return (
+    <div className="space-y-1.5">
+      {data.map((d, i) => (
+        <div key={i} className="flex items-center gap-2 text-xs">
+          <span className="w-28 shrink-0 truncate text-zinc-400" title={d.label}>{d.label}</span>
+          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[var(--bg-inner)]">
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${Math.max((d.nilai / maks) * 100, 2)}%`, background: WARNA[i % WARNA.length] }}
+            />
+          </div>
+          <span className="w-10 shrink-0 text-right tabular-nums text-zinc-300">{rapi(d.nilai)}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Donat komposisi: satu lingkaran, segmennya stroke-dasharray. */
+function Donat({ data, satuan }: { data: Titik[]; satuan?: string }) {
+  const total = data.reduce((a, d) => a + d.nilai, 0) || 1
+  const K = 2 * Math.PI * 40
+  // Offset tiap segmen dihitung sekali di sini; menjumlahkannya sambil merender
+  // (let mulai += …) bikin hasilnya bergantung urutan render.
+  const mulai = data.map((_, i) => data.slice(0, i).reduce((a, d) => a + (d.nilai / total) * K, 0))
+  return (
+    <div className="flex flex-wrap items-center gap-5">
+      <svg viewBox="0 0 100 100" className="h-36 w-36 shrink-0 -rotate-90">
+        {data.map((d, i) => {
+          const panjang = (d.nilai / total) * K
+          return (
+            <circle
+              key={i}
+              cx="50" cy="50" r="40" fill="none"
+              stroke={WARNA[i % WARNA.length]}
+              strokeWidth="14"
+              strokeDasharray={`${panjang} ${K - panjang}`}
+              strokeDashoffset={-mulai[i]}
+            />
+          )
+        })}
+      </svg>
+      <div className="space-y-1 text-xs">
+        <p className="mb-1.5 font-semibold text-white">
+          {rapi(total)} <span className="font-normal text-zinc-500">{satuan || 'total'}</span>
+        </p>
+        {data.map((d, i) => (
+          <p key={i} className="flex items-center gap-2 text-zinc-400">
+            <span className="h-2 w-2 shrink-0 rounded-sm" style={{ background: WARNA[i % WARNA.length] }} />
+            <span className="truncate">{d.label}</span>
+            <span className="tabular-nums text-zinc-300">{rapi(d.nilai)}</span>
+            <span className="text-zinc-600">{Math.round((d.nilai / total) * 100)}%</span>
+          </p>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** Deret berurut. Titiknya dinormalkan ke kotak 100×40. */
+function Area({ data }: { data: Titik[] }) {
+  const maks = Math.max(...data.map((d) => d.nilai), 1)
+  const x = (i: number) => (data.length === 1 ? 50 : (i / (data.length - 1)) * 100)
+  const y = (n: number) => 38 - (n / maks) * 34
+  const garis = data.map((d, i) => `${x(i)},${y(d.nilai)}`).join(' ')
+  return (
+    <div>
+      <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="h-28 w-full">
+        <polygon points={`0,40 ${garis} 100,40`} fill="#0ea5e9" opacity="0.18" />
+        <polyline points={garis} fill="none" stroke="#38bdf8" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+      </svg>
+      <div className="flex justify-between text-[10px] text-zinc-600">
+        <span>{data[0]?.label}</span>
+        <span className="text-zinc-400">puncak {rapi(maks)}</span>
+        <span>{data[data.length - 1]?.label}</span>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Blok ```grafik dari model: {tipe, judul, satuan, data:[{label,nilai}]}.
+ * Divalidasi di sini — JSON dari model bisa apa saja, dan grafik yang separuh
+ * benar lebih menyesatkan daripada tidak ada grafik. Gagal validasi = mentahnya.
+ */
+function GrafikBlok({ isi }: { isi: string }) {
+  let spek: any
+  try { spek = JSON.parse(isi) } catch { spek = null }
+  const data: Titik[] = Array.isArray(spek?.data)
+    ? spek.data
+        .filter((d: any) => d && typeof d.label === 'string' && Number.isFinite(Number(d.nilai)))
+        .slice(0, 12)
+        .map((d: any) => ({ label: String(d.label), nilai: Number(d.nilai) }))
+    : []
+
+  if (!data.length)
+    return (
+      <pre className="overflow-x-auto rounded-md bg-[var(--bg-inner)] p-3 font-mono text-xs">{isi.trim()}</pre>
+    )
+
+  const tipe = spek.tipe === 'donat' || spek.tipe === 'area' ? spek.tipe : 'batang'
+  return (
+    <div className="my-2 rounded-md border border-[var(--border-subtle)] p-3">
+      {typeof spek.judul === 'string' && spek.judul && (
+        <p className="mb-2.5 text-xs font-medium text-white">{spek.judul}</p>
+      )}
+      {tipe === 'donat' ? (
+        <Donat data={data} satuan={typeof spek.satuan === 'string' ? spek.satuan : undefined} />
+      ) : tipe === 'area' ? (
+        <Area data={data} />
+      ) : (
+        <Batang data={data} />
       )}
     </div>
   )
@@ -272,6 +528,7 @@ export default function ChatAI() {
   const [threadId, setThreadId] = useState<string | null>(null)
   const [pesan, setPesan] = useState<Pesan[]>([])
   const [teks, setTeks] = useState('')
+  const [internet, setInternet] = useState(false)
   const [kirim, setKirim] = useState(false)
   const [galat, setGalat] = useState<string | null>(null)
   const bawah = useRef<HTMLDivElement>(null)
@@ -338,20 +595,28 @@ export default function ChatAI() {
           : { role: m.role, content: m.content },
       )
 
-      const percakapan: Pesan[] = [{ role: 'system', content: SISTEM }, ...riwayat]
+      // Tombol internet cuma berlaku kalau pertanyaannya memang urusan
+      // kebencanaan/aplikasi ini — gerbangnya kode, bukan model.
+      const web = internet && relevanInternet(t)
+      const alat = web ? [...ALAT, ALAT_WEB] : ALAT
+      const percakapan: Pesan[] = [
+        { role: 'system', content: SISTEM + (web ? TAMBAHAN_WEB : internet ? TOLAK_WEB : '') },
+        ...riwayat,
+      ]
       const langkah: Langkah[] = []
       let jawab: Pesan | null = null
 
       for (let ronde = 0; ronde < MAX_RONDE; ronde++) {
         // Ronde terakhir tanpa alat: kalau alat masih ditawarkan, model memilih
         // membaca lagi alih-alih menjawab dengan yang sudah ia punya.
-        const m = await model(percakapan, ronde === MAX_RONDE - 1 ? null : ALAT)
+        const m = await model(percakapan, ronde === MAX_RONDE - 1 ? null : alat)
         if (!m.tool_calls?.length) { jawab = m; break }
         percakapan.push(m)
         for (const c of m.tool_calls) {
-          const { nama, isi: hasil } = jalankanAlat(c?.function?.arguments)
+          const namaAlat = c?.function?.name || 'baca_data'
+          const { nama, isi: hasil } = await jalankanAlat(namaAlat, c?.function?.arguments, web)
           langkah.push({ nama, bytes: hasil.length })
-          percakapan.push({ role: 'tool', tool_name: c?.function?.name || 'baca_data', content: hasil })
+          percakapan.push({ role: 'tool', tool_name: namaAlat, content: hasil })
         }
       }
       if (!jawab) jawab = await model(percakapan, null)
@@ -377,13 +642,20 @@ export default function ChatAI() {
 
   if (!buka)
     return (
-      <button
-        onClick={() => setBuka(true)}
-        title="HydroGuard AI"
-        className="fixed bottom-5 right-5 z-40 flex h-12 items-center gap-2 rounded-full bg-[#0077b6] px-4 text-sm font-semibold text-white shadow-xl shadow-black/40 transition-colors hover:bg-[#005f92]"
-      >
-        <Sparkles className="h-4 w-4" /> HydroGuard AI
-      </button>
+      <div className="bergoyang fixed bottom-5 right-5 z-40 w-56 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3 shadow-lg shadow-black/40">
+        <p className="flex items-center gap-1.5 text-sm font-semibold text-white">
+          <Sparkles className="h-4 w-4 text-[#0077b6]" /> HydroGuard AI
+        </p>
+        <p className="mt-1 text-[11px] leading-snug text-zinc-500">
+          Tanya soal sensor, prediksi banjir, posko, dan sumber daya.
+        </p>
+        <button
+          onClick={() => setBuka(true)}
+          className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#0077b6] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#005f92]"
+        >
+          <Bot className="h-3.5 w-3.5" /> Chat with AI
+        </button>
+      </div>
     )
 
   return (
@@ -472,7 +744,9 @@ export default function ChatAI() {
                 <Bot className="mx-auto h-6 w-6 text-zinc-600" />
                 <p className="text-xs text-zinc-500">
                   Jawabannya dibaca langsung dari data HydroGuard. AI di sini hanya membaca —
-                  tidak mengubah apa pun.
+                  tidak mengubah apa pun. Tombol <Globe className="inline h-3 w-3 align-[-1px]" />{' '}
+                  menambahkan rujukan dari internet, hanya untuk pertanyaan yang memang soal
+                  kebencanaan atau aplikasi ini.
                 </p>
                 <div className="flex flex-wrap justify-center gap-2 pt-1">
                   {CONTOH.map((c) => (
@@ -524,6 +798,26 @@ export default function ChatAI() {
           </div>
 
           <div className="flex items-end gap-2 border-t border-[var(--border-subtle)] p-3">
+            {/* Internet menyala pun, pertanyaan di luar lingkup tidak dicarikan —
+                gerbangnya di `relevanInternet`, bukan di model. */}
+            <button
+              type="button"
+              onClick={() => setInternet((v) => !v)}
+              aria-pressed={internet}
+              title={
+                internet
+                  ? 'Internet: menyala — rujukan luar boleh dicari, selama pertanyaannya soal kebencanaan atau aplikasi ini'
+                  : 'Internet: mati — hanya data HydroGuard'
+              }
+              className={cn(
+                'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors',
+                internet
+                  ? 'border-[#0077b6]/60 bg-[#0077b6]/10 text-[#38bdf8]'
+                  : 'border-[var(--border-medium)] text-zinc-500 hover:text-zinc-300',
+              )}
+            >
+              <Globe className="h-4 w-4" />
+            </button>
             <textarea
               value={teks}
               onChange={(e) => setTeks(e.target.value)}
@@ -533,7 +827,7 @@ export default function ChatAI() {
               }}
               rows={1}
               disabled={!status?.siap || kirim}
-              placeholder="Tanya soal sensor, prediksi banjir, posko, atau sumber daya…"
+              placeholder={internet ? 'Tanya — rujukan luar ikut dicari…' : 'Tanya soal sensor, prediksi banjir, posko, atau sumber daya…'}
               className="max-h-28 min-h-9 flex-1 resize-none rounded-lg border border-[var(--border-medium)] bg-[var(--bg-inner)] px-3 py-2 text-sm text-white outline-none focus:border-[#0077b6] disabled:opacity-50"
             />
             <button

@@ -5,7 +5,7 @@
  * menyentuh jaringan.
  */
 import assert from 'node:assert'
-import { tanganiAi, aiSiap } from './handler.mjs'
+import { tanganiAi, aiSiap, ringkasHasil } from './handler.mjs'
 
 const palsu = () => {
   const res = { status: 0, body: '' }
@@ -37,5 +37,19 @@ assert.equal(await tanganiAi({ url: '/command-center', method: 'GET' }, palsu())
 process.env.OLLAMA_BASE_URL = 'http://localhost:11434'
 delete process.env.OLLAMA_API_KEY
 assert.equal(aiSiap(), true, 'Ollama lokal tidak butuh kunci')
+
+// --- pencarian web (tombol Internet) ---
+res = palsu()
+assert.equal(await tanganiAi({ url: '/api/cari', method: 'GET' }, res), true, 'route /api/cari miliknya')
+assert.equal(res.status, 400, 'kueri kosong ditolak sebelum menembak ke luar')
+
+const HTML = `<table><tr><td><a class="result-link" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fbnpb.go.id%2Fbanjir">Prosedur <b>banjir</b></a></td></tr>
+<tr><td class="result-snippet">Tinggi muka air &amp; siaga</td></tr></table>`
+const hasil = ringkasHasil(HTML)
+assert.match(hasil, /https:\/\/bnpb\.go\.id\/banjir/, 'tautan dibuka dari bungkus uddg')
+assert.match(hasil, /Prosedur banjir/, 'tag HTML dilepas dari judul')
+assert.match(hasil, /Tinggi muka air & siaga/, 'entitas HTML dikembalikan di cuplikan')
+assert.equal(ringkasHasil('<html>tata letak berubah</html>'), '',
+  'halaman tak dikenal = kosong, bukan hasil ngawur')
 
 console.log('ai/handler: ok')

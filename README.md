@@ -21,6 +21,17 @@ memanggilnya langsung.
 
 Riwayat percakapan disimpan di `localStorage` (belum ada backend).
 
+Ikut pembaruan pushhub:
+- **Grafik.** Minta "buat grafik …" dan jawabannya berupa blok ```` ```grafik ````
+  (JSON `{tipe, judul, data}`) yang dirender jadi batang/donat/area. Angkanya
+  dihitung di kode lebih dulu (blok "Sebaran nilai" pada jawaban alat) — model
+  bahasa tidak bisa dipercaya menghitung puluhan entri.
+- **Tombol Internet** di sebelah kotak ketik. Menyala = model boleh memanggil
+  `cari_internet`, tapi hanya kalau pertanyaannya memang soal kebencanaan atau
+  aplikasi ini (gerbang kata kunci di `relevanInternet`, bukan model yang
+  memutuskan). Pencariannya lewat `/api/cari` di proxy yang sama — mesin
+  pencari juga tidak mengirim header CORS. Ditukar lewat `AI_SEARCH_URL`.
+
 ```bash
 cp .env.example .env      # isi OLLAMA_API_KEY
 npm run dev               # proxy ikut terpasang di dev server

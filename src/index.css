@@ -442,3 +442,23 @@ html[data-theme="light"] .hg-tooltip-name { color: #0f172a; }
 html[data-theme="light"] .leaflet-container {
   background: #cae9ff !important;
 }
+
+/* ── Kartu Chat AI bergoyang halus; berhenti saat disentuh (dari pushhub) ── */
+@keyframes bergoyang {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50%      { transform: translateY(-3px) rotate(1.5deg); }
+}
+.bergoyang {
+  animation: bergoyang 4s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+.bergoyang:hover,
+.bergoyang:focus-within { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .bergoyang { animation: none; }
+}
+
+/* Peta Leaflet memasang z-index 400+ pada panelnya. Tanpa konteks penumpukan
+   sendiri, angka itu ikut bersaing di lapisan halaman dan menembus modal yang
+   mengambang di atasnya (widget Chat AI, modal detail). */
+.leaflet-container { z-index: 0; }

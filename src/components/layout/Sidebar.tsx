@@ -40,12 +40,14 @@ export default function Sidebar({ activePage, onNavigate, onShowToast, onLogout 
         {/* Logo */}
         <div
           onClick={() => onShowToast('Hydroguard home console')}
-          className="w-10 h-10 rounded-xl bg-black border border-[var(--border-medium)] hover:border-zinc-400 transition-all duration-300 cursor-pointer flex items-center justify-center group"
+          title="HydroGuard"
+          className="w-10 h-10 rounded-xl bg-black border border-[var(--border-medium)] hover:border-zinc-400 transition-all duration-300 cursor-pointer flex items-center justify-center group overflow-hidden"
         >
-          <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-2 group-hover:scale-105 transition-transform" style={{ stroke: 'var(--logo-color)' }}>
-            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 15c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5z" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M12 7c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" style={{ fill: 'var(--logo-color)' }} />
-          </svg>
+          <img
+            src="/brand/hydroguard-mark.png"
+            alt="HydroGuard"
+            className="w-7 h-7 object-contain group-hover:scale-105 transition-transform"
+          />
         </div>
 
         <div className="w-8 h-[1px] bg-[#1e1e23] my-1" />
