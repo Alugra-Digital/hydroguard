@@ -10,10 +10,13 @@ services:
     # server.mjs/ai membacanya dari environment. Tanpa baris ini
     # /api/chat/status selalu menjawab "belum aktif".
     env_file: .env
-    # Bind ke 127.0.0.1 saja: port 80/443 milik nginx-proxy-manager, dan
-    # proxy host hydroguard-lah yang meneruskan ke port ini.
+    # Tidak ada nomor port yang dipatok di sini: PORT datang dari .env, dibaca
+    # server.mjs lewat env_file sekaligus dipakai sebagai pemetaan. Bind ke
+    # 127.0.0.1 saja — 80/443 milik nginx-proxy-manager, dan proxy host
+    # hydroguard-lah yang meneruskan ke port ini. `:?` = gagal dengan pesan
+    # jelas kalau PORT lupa diisi, bukan diam-diam pakai nilai tebakan.
     ports:
-      - "127.0.0.1:${HOST_PORT}:8080"
+      - "127.0.0.1:${PORT:?PORT belum diisi di .env}:${PORT}"
     networks: [shared-infra]
 
 networks:

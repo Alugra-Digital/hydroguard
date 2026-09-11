@@ -50,18 +50,20 @@ tahap akhirnya nginx statis, seluruh Chat AI mati (status selalu 404).
 ```bash
 # lokal
 npm run dev                    # proxy AI ikut terpasang di dev server
-npx vite build && npm start    # tanpa Docker; server.mjs di :8080
+npx vite build && npm start    # tanpa Docker; server.mjs di :$PORT (.env)
                                # (`npm run build` masih tersandung tsc -b, lihat Catatan)
 
 # di server (~/apps/hydroguard)
-cp .env.example .env           # isi OLLAMA_API_KEY dan HOST_PORT
+cp .env.example .env           # isi OLLAMA_API_KEY dan PORT
 docker compose up -d --build
 docker compose logs -f hydroguard
 ```
 
-Container hanya mendengarkan di `127.0.0.1:${HOST_PORT}`; yang menghadap publik
-nginx-proxy-manager. `HOST_PORT` harus sama dengan port yang sudah ditunjuk
-proxy host hydroguard.
+Container hanya mendengarkan di `127.0.0.1:${PORT}`; yang menghadap publik
+nginx-proxy-manager. `PORT` (bawaan `4021`) dipakai dua-duanya — proses Node di
+dalam container dan pemetaan port di host — jadi tidak ada nomor port yang
+dipatok di Dockerfile maupun compose. Nilainya harus sama dengan port yang
+sudah ditunjuk proxy host hydroguard.
 
 > **Env baru hanya terbaca setelah container DIBUAT ULANG.** `env_file` dibaca
 > saat container dibuat, jadi setelah mengubah `.env` jalankan

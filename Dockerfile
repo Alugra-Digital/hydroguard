@@ -26,6 +26,6 @@ ENV NODE_ENV=production
 COPY --from=build /app/dist ./dist
 COPY ai ./ai
 COPY server.mjs package.json ./
-# server.mjs memakai PORT, bawaannya 8080.
-EXPOSE 8080
+# Tanpa EXPOSE: port tidak dipatok di image. server.mjs mendengarkan di PORT
+# dari environment (lihat .env dan docker-compose.yml).
 CMD ["node", "server.mjs"]
