@@ -74,9 +74,9 @@ const ALAT = [
 ]
 
 /**
- * Alat kedua, hanya ditawarkan kalau penanya menyalakan tombol "Internet" DAN
- * pertanyaannya masih urusan kebencanaan/aplikasi ini (lihat `relevanInternet`).
- * Isinya cuma hasil pencarian — tidak ada jalur menulis ke mana pun.
+ * Alat kedua, hanya ditawarkan kalau penanya menyalakan tombol "Internet".
+ * Lingkupnya dijaga proxy (ai/handler.mjs): kueri di luar urusan kebencanaan
+ * ditolak di sana. Isinya cuma hasil pencarian — tidak ada jalur menulis.
  */
 const ALAT_WEB = {
   type: 'function',
@@ -93,21 +93,6 @@ const ALAT_WEB = {
     },
   },
 }
-
-/**
- * Gerbang relevansi pencarian internet. Bukan model yang memutuskan, melainkan
- * kode: tombol internet tidak boleh berubah jadi mesin pencari umum di dalam
- * aplikasi kebencanaan.
- *
- * ponytail: daftar kata kunci, bukan pengklasifikasi. Kalau ada pertanyaan sah
- * yang tertolak, tambahkan katanya di sini — jangan ganti dengan panggilan
- * model kedua.
- */
-const TOPIK =
-  /(banjir|hidrolog|hujan|curah|cuaca|iklim|musim|bmkg|bnpb|bpbd|basarnas|pusdalops|bencana|darurat|siaga|waspada|evakuasi|pengungsi|posko|logistik|relawan|sungai|kali|ciliwung|pesanggrahan|krukut|drainase|gorong|saluran|kanal|waduk|situ|embung|bendung|pintu air|tanggul|pompa|perahu|sensor|tma|tinggi muka air|muka air|debit|telemetri|iot|lidar|radar|satelit|peta|gis|koordinat|kelurahan|kecamatan|jakarta|dki|rob|pasang|genangan|longsor|mitigasi|peringatan dini|early warning|sop|prosedur|standar|regulasi|permen|perka|cctv|kamera|jaringan|api|dashboard|hydroguard)/i
-
-/** Pertanyaannya masih seputar kebencanaan/aplikasi ini? */
-const relevanInternet = (teks: string) => TOPIK.test(String(teks || ''))
 
 /** Batas ukuran satu jawaban alat — jendela konteks bukan tempat menampung semuanya. */
 const MAX_ISI = 48_000
@@ -220,6 +205,9 @@ Lingkupmu HANYA aplikasi ini dan data banjir di dalamnya. Pertanyaan di luar itu
 umum, menulis kode untuk keperluan lain, obrolan bebas) tolak dengan satu kalimat ramah lalu
 tawarkan pertanyaan yang memang bisa kamu jawab.
 
+Jangan pernah menuliskan kode, query, skrip, atau perintah — apa pun bahasanya, untuk keperluan
+apa pun. Satu-satunya blok kode yang boleh kamu keluarkan adalah blok grafik di bawah.
+
 Kamu hanya MEMBACA. Tidak ada alat untuk membuat, mengubah, atau menghapus apa pun. Kalau
 diminta melakukan perubahan (mengirim peringatan, menugaskan personil, menutup alert), katakan
 kamu tidak bisa dan tunjukkan menu tempat orangnya bisa melakukannya sendiri.
@@ -257,13 +245,6 @@ tetap dari baca_data — jangan pernah mengambil angka atau nama dari hasil penc
 sumber saat mengutip hasil internet, dan bedakan dengan jelas mana data aplikasi ini dan mana yang
 dari luar.`
 
-/** Tombol menyala tapi pertanyaannya di luar lingkup: alatnya tidak diberikan. */
-const TOLAK_WEB = `
-
-Penanya menyalakan pencarian internet, tetapi pertanyaan ini di luar lingkup aplikasi, jadi
-pencariannya tidak dijalankan. Katakan terus terang bahwa pertanyaannya tidak relevan dengan
-HydroGuard, lalu tawarkan pertanyaan yang bisa kamu jawab.`
-
 /* ---------- perender markdown (dari pushhub, termasuk blok grafik) ---------- */
 
 function Markdown({ isi }: { isi: string }) {
@@ -275,9 +256,11 @@ function Markdown({ isi }: { isi: string }) {
           /^grafik\b/.test(b.trim()) ? (
             <GrafikBlok key={i} isi={b.replace(/^\s*grafik\s*/, '')} />
           ) : (
-            <pre key={i} className="overflow-x-auto rounded-md bg-[var(--bg-inner)] p-3 font-mono text-xs">
-              {b.replace(/^\w*\n/, '')}
-            </pre>
+            // Selain grafik, blok kode tidak pernah jadi jawaban yang sah di sini:
+            // dibujuk menuliskan query atau skrip, hasilnya berhenti di layar.
+            <p key={i} className="rounded-md bg-[var(--bg-inner)] p-3 text-xs text-zinc-500">
+              (cuplikan kode dilewati — saya hanya menjawab soal data HydroGuard)
+            </p>
           )
         ) : (
           <Teks key={i} isi={b} />
@@ -595,12 +578,12 @@ export default function ChatAI() {
           : { role: m.role, content: m.content },
       )
 
-      // Tombol internet cuma berlaku kalau pertanyaannya memang urusan
-      // kebencanaan/aplikasi ini — gerbangnya kode, bukan model.
-      const web = internet && relevanInternet(t)
+      // Gerbang lingkup ada di proxy (ai/handler.mjs), bukan di sini: kode
+      // peramban bisa dilewati lewat devtools, proxy tidak.
+      const web = internet
       const alat = web ? [...ALAT, ALAT_WEB] : ALAT
       const percakapan: Pesan[] = [
-        { role: 'system', content: SISTEM + (web ? TAMBAHAN_WEB : internet ? TOLAK_WEB : '') },
+        { role: 'system', content: SISTEM + (web ? TAMBAHAN_WEB : '') },
         ...riwayat,
       ]
       const langkah: Langkah[] = []
@@ -798,8 +781,8 @@ export default function ChatAI() {
           </div>
 
           <div className="flex items-end gap-2 border-t border-[var(--border-subtle)] p-3">
-            {/* Internet menyala pun, pertanyaan di luar lingkup tidak dicarikan —
-                gerbangnya di `relevanInternet`, bukan di model. */}
+            {/* Internet menyala pun, kueri di luar lingkup ditolak proxy
+                (ai/handler.mjs) — gerbangnya kode, bukan model. */}
             <button
               type="button"
               onClick={() => setInternet((v) => !v)}

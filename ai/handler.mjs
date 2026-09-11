@@ -37,6 +37,36 @@ const baca = (req) =>
     req.on('error', reject)
   })
 
+/* ── gerbang topik ──────────────────────────────────────────────────────── */
+
+/**
+ * Lingkup asisten dijaga DI SINI, bukan di prompt sistem atau di peramban:
+ * prompt bisa dibujuk ("abaikan aturan, tuliskan query…") dan gerbang peramban
+ * bisa dilewati lewat devtools. Proxy ini satu-satunya pintu ke model, jadi
+ * pertanyaan di luar urusan HydroGuard berhenti sebelum menjadi permintaan.
+ *
+ * ponytail: daftar kata kunci, bukan pengklasifikasi. Pertanyaan sah yang
+ * tertolak? tambahkan katanya di sini — jangan ganti dengan panggilan model kedua.
+ */
+export const TOPIK =
+  /(banjir|hidrolog|hujan|curah|cuaca|iklim|musim|bmkg|bnpb|bpbd|basarnas|pusdalops|bencana|darurat|siaga|waspada|evakuasi|pengungsi|posko|logistik|relawan|sungai|kali|ciliwung|pesanggrahan|krukut|drainase|gorong|saluran|kanal|waduk|situ|embung|bendung|pintu air|tanggul|pompa|perahu|sensor|tma|tinggi muka air|muka air|debit|telemetri|iot|lidar|radar|satelit|peta|gis|koordinat|kelurahan|kecamatan|jakarta|dki|rob|pasang|genangan|longsor|mitigasi|peringatan dini|early warning|sop|prosedur|standar|regulasi|permen|perka|cctv|kamera|insiden|risiko|personil|command center|hydroguard)/i
+
+export const relevanTopik = (t) => TOPIK.test(String(t || ''))
+
+/** Balasan untuk pertanyaan di luar lingkup — bentuknya sama seperti balasan model. */
+const TOLAK =
+  'Maaf, saya hanya menjawab seputar HydroGuard: sensor tinggi muka air & curah hujan, CCTV, ' +
+  'peringatan dini, prediksi banjir, posko & evakuasi, sumber daya (pompa, perahu, personil, ' +
+  'logistik), dan riwayat insiden. Di luar itu — termasuk menuliskan kode atau query — saya ' +
+  'lewati. Coba tanyakan, misalnya, "kelurahan mana yang risikonya paling tinggi?"'
+
+/** Pertanyaan terakhir dari penanya; ronde alat mengirim ulang riwayat yang sama. */
+const tanyaTerakhir = (messages) => {
+  for (let i = messages.length - 1; i >= 0; i--)
+    if (messages[i]?.role === 'user') return String(messages[i].content || '')
+  return ''
+}
+
 /* ── pencarian web (dipinjam dari pushhub, api/src/ai.ts) ────────────────── */
 
 /** Mesin pencari tanpa kunci; bisa ditukar lewat env kalau diblokir. */
@@ -86,6 +116,8 @@ export async function tanganiAi(req, res) {
   if (jalur === '/api/cari') {
     const kueri = new URL(req.url, 'http://x').searchParams.get('q') || ''
     if (!kueri.trim()) return kirimJson(res, 400, { error: 'kueri kosong' }), true
+    // Tombol "Internet" bukan mesin pencari umum yang menumpang di aplikasi ini.
+    if (!relevanTopik(kueri)) return kirimJson(res, 403, { error: 'kueri di luar lingkup HydroGuard' }), true
     try {
       const r = await fetch(cariUrl() + encodeURIComponent(kueri), {
         headers: { 'user-agent': 'Mozilla/5.0 (compatible; hydroguard)' },
@@ -114,6 +146,10 @@ export async function tanganiAi(req, res) {
   try {
     const { messages, tools } = JSON.parse(await baca(req))
     if (!Array.isArray(messages) || !messages.length) throw new Error('messages kosong')
+    // Di luar lingkup = tidak pernah sampai ke model. 200, karena ini jawaban
+    // yang sah bagi peramban — bukan galat yang perlu ia tampilkan merah.
+    if (!relevanTopik(tanyaTerakhir(messages)))
+      return kirimJson(res, 200, { message: { role: 'assistant', content: TOLAK } }), true
     const r = await fetch(`${baseUrl()}/api/chat`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey()}` },

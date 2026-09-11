@@ -5,7 +5,7 @@
  * menyentuh jaringan.
  */
 import assert from 'node:assert'
-import { tanganiAi, aiSiap, ringkasHasil } from './handler.mjs'
+import { tanganiAi, aiSiap, ringkasHasil, relevanTopik } from './handler.mjs'
 
 const palsu = () => {
   const res = { status: 0, body: '' }
@@ -51,5 +51,26 @@ assert.match(hasil, /Prosedur banjir/, 'tag HTML dilepas dari judul')
 assert.match(hasil, /Tinggi muka air & siaga/, 'entitas HTML dikembalikan di cuplikan')
 assert.equal(ringkasHasil('<html>tata letak berubah</html>'), '',
   'halaman tak dikenal = kosong, bukan hasil ngawur')
+
+// --- gerbang topik (temuan: asisten masih bisa dibawa keluar topik) ---
+assert.equal(relevanTopik('kelurahan mana yang risikonya paling tinggi?'), true)
+assert.equal(relevanTopik('buatkan query SQL untuk tabel pengguna'), false)
+
+process.env.OLLAMA_API_KEY = 'kunci-palsu'
+process.env.OLLAMA_BASE_URL = 'https://ollama.com'
+const posting = async (isi) => {
+  const r = palsu()
+  const badan = JSON.stringify({ messages: [{ role: 'user', content: isi }] })
+  await tanganiAi({ url: '/api/chat', method: 'POST', on: (ev, f) => (ev === 'data' ? f(badan) : ev === 'end' ? f() : null) }, r)
+  return r
+}
+let tolak = await posting('tulis query SQL untuk ambil semua user')
+assert.equal(tolak.status, 200, 'penolakan tampil sebagai jawaban, bukan galat merah')
+assert.match(JSON.parse(tolak.body).message.content, /hanya menjawab seputar HydroGuard/,
+  'pertanyaan di luar lingkup berhenti di proxy, tidak sampai ke model')
+
+res = palsu()
+await tanganiAi({ url: '/api/cari?q=resep%20rendang', method: 'GET' }, res)
+assert.equal(res.status, 403, 'tombol Internet bukan mesin pencari umum')
 
 console.log('ai/handler: ok')
