@@ -11,31 +11,28 @@ interface TopBarProps {
   onShowToast: (msg: string) => void
 }
 
-// ── Real-time clock: YYYY-MM-DD HH:MM:SS.mmm ─────────────
+// ── Real-time clock: YYYY-MM-DD HH:MM:SS ─────────────
 function RealtimeClock() {
   const [now, setNow] = useState(new Date())
 
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 50)
+    const id = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(id)
   }, [])
 
-  const pad  = (n: number, len = 2) => String(n).padStart(len, '0')
-  const Y    = now.getFullYear()
-  const M    = pad(now.getMonth() + 1)
-  const D    = pad(now.getDate())
-  const h    = pad(now.getHours())
-  const m    = pad(now.getMinutes())
-  const s    = pad(now.getSeconds())
-  const ms   = pad(now.getMilliseconds(), 3)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const Y   = now.getFullYear()
+  const M   = pad(now.getMonth() + 1)
+  const D   = pad(now.getDate())
+  const h   = pad(now.getHours())
+  const m   = pad(now.getMinutes())
+  const s   = pad(now.getSeconds())
 
   return (
     <span className="font-mono text-xs tracking-tight select-none">
       <span className="text-zinc-500">{Y}-{M}-{D}</span>
       <span className="text-zinc-600 mx-1">·</span>
       <span className="text-zinc-300">{h}:{m}:{s}</span>
-      <span className="text-zinc-600">.</span>
-      <span className="text-zinc-500">{ms}</span>
     </span>
   )
 }
