@@ -1,0 +1,7 @@
+node_modules
+dist
+.git
+.github
+# Kredensial tidak boleh ikut ke image; nilainya masuk lewat env_file.
+.env
+*.log

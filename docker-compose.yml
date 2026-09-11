@@ -1,0 +1,23 @@
+# Stack HydroGuard di VPS Alugra. Image dibangun di server oleh
+# `docker compose up -d --build` (lihat .github/workflows/hydroguard.yml).
+services:
+  hydroguard:
+    build: .
+    container_name: hydroguard
+    restart: unless-stopped
+    # Satu-satunya jalan OLLAMA_* dan AI_SEARCH_URL sampai ke container:
+    # .env tidak ikut ke image (.gitignore + .dockerignore), sedangkan
+    # server.mjs/ai membacanya dari environment. Tanpa baris ini
+    # /api/chat/status selalu menjawab "belum aktif".
+    env_file: .env
+    # Bind ke 127.0.0.1 saja: port 80/443 milik nginx-proxy-manager, dan
+    # proxy host hydroguard-lah yang meneruskan ke port ini.
+    ports:
+      - "127.0.0.1:${HOST_PORT}:8080"
+    networks: [shared-infra]
+
+networks:
+  # Dibuat sekali di server (`docker network create shared-infra`), dipakai
+  # bersama nginx-proxy-manager dan stack lain.
+  shared-infra:
+    external: true

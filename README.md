@@ -40,17 +40,34 @@ npm test                  # cek mandiri proxy (tidak menyentuh jaringan)
 
 `OLLAMA_API_KEY` kosong = widget bilang fiturnya belum aktif.
 
-## Produksi
+## Produksi (VPS, Docker)
 
-`vite build` menghasilkan berkas statis, tapi `/api/chat` butuh proses Node:
+`vite build` cuma menghasilkan berkas statis; `/api/chat` butuh proses Node.
+Karena itu tahap akhir Dockerfile adalah `node server.mjs` — ia yang melayani
+`dist/` **dan** `/api/chat`, `/api/chat/status`, `/api/cari` sekaligus. Kalau
+tahap akhirnya nginx statis, seluruh Chat AI mati (status selalu 404).
 
 ```bash
-npm run build && npm start   # server.mjs: static dist/ + /api/chat, port 8080
+# lokal
+npm run dev                    # proxy AI ikut terpasang di dev server
+npx vite build && npm start    # tanpa Docker; server.mjs di :8080
+                               # (`npm run build` masih tersandung tsc -b, lihat Catatan)
+
+# di server (~/apps/hydroguard)
+cp .env.example .env           # isi OLLAMA_API_KEY dan HOST_PORT
+docker compose up -d --build
+docker compose logs -f hydroguard
 ```
 
-Kalau di VPS aplikasi ini masih disajikan nginx statis, Dockerfile-nya perlu
-diubah menjadi `CMD ["node", "server.mjs"]` (atau nginx diberi
-`proxy_pass /api/ → node`), dan `OLLAMA_*` dipasang sebagai env container.
+Container hanya mendengarkan di `127.0.0.1:${HOST_PORT}`; yang menghadap publik
+nginx-proxy-manager. `HOST_PORT` harus sama dengan port yang sudah ditunjuk
+proxy host hydroguard.
+
+> **Env baru hanya terbaca setelah container DIBUAT ULANG.** `env_file` dibaca
+> saat container dibuat, jadi setelah mengubah `.env` jalankan
+> `docker compose up -d` (atau `--force-recreate`) — `docker restart hydroguard`
+> **tidak** memuat nilai baru dan `/api/chat/status` akan tetap bilang belum
+> aktif.
 
 ## Catatan
 
