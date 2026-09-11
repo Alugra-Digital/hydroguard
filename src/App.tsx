@@ -3,7 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import { CheckCircle } from 'lucide-react'
 import Sidebar from './components/layout/Sidebar'
 import TopBar  from './components/layout/TopBar'
-import ChatAI  from './components/ChatAI'
+import ChatAI, { ChatAIPage } from './components/ChatAI'
 
 import LoginPage             from './pages/login'
 import DashboardPage         from './pages/dashboard'
@@ -27,6 +27,7 @@ const PAGE_PATHS: Record<string, string> = {
   'resource-management':  '/resource-management',
   'prediction-analysis':  '/prediction-analysis',
   'incident-history':     '/incident-history',
+  'chat-ai':              '/chat-ai',
 }
 
 // URL path → page-id
@@ -137,12 +138,14 @@ function AppLayout() {
           <Route path="/resource-management" element={<ResourceManagementPage />} />
           <Route path="/prediction-analysis" element={<PredictionAnalysisPage />} />
           <Route path="/incident-history"    element={<IncidentHistoryPage />} />
+          <Route path="/chat-ai"             element={<ChatAIPage />} />
           <Route path="/"                    element={<Navigate to="/command-center" replace />} />
           <Route path="*"                    element={<Navigate to="/command-center" replace />} />
         </Routes>
       </main>
 
-      <ChatAI />
+      {/* Quick chat tidak ditumpuk di atas halaman Chat AI itu sendiri. */}
+      {location.pathname !== PAGE_PATHS['chat-ai'] && <ChatAI />}
     </div>
   )
 }

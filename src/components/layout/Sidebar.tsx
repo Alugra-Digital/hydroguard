@@ -9,6 +9,7 @@ import {
   Package,
   Brain,
   FileText,
+  Sparkles,
   Settings,
   HelpCircle,
   LogOut,
@@ -34,6 +35,7 @@ const navItems = [
   { id: 'resource-management', icon: Package,         label: 'Resource Management'  },
   { id: 'prediction-analysis', icon: Brain,           label: 'Prediction Analysis'  },
   { id: 'incident-history',    icon: FileText,        label: 'Incident History'     },
+  { id: 'chat-ai',             icon: Sparkles,        label: 'Chat AI'              },
 ]
 
 export default function Sidebar({ activePage, onNavigate, onShowToast, onLogout }: SidebarProps) {

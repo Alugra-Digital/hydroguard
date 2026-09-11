@@ -9,17 +9,23 @@ Sistem pemantauan banjir dan pusat komando untuk Jakarta Selatan.
 
 ## Chat AI
 
-Widget mengambang di kanan bawah tiap halaman (`src/components/ChatAI.tsx`),
-dipinjam dari pushhub. Lingkupnya dibatasi ke data HydroGuard: sensor, CCTV,
-alert, prediksi, sumber daya, insiden. **Hanya membaca** — tidak ada alat yang
-mengubah data.
+Dua tampilan, satu logika (`src/components/ChatAI.tsx`), dipinjam dari pushhub.
+Lingkupnya dibatasi ke data HydroGuard: sensor, CCTV, alert, prediksi, sumber
+daya, insiden. **Hanya membaca** — tidak ada alat yang mengubah data.
+
+- **Quick chat** — widget mengambang di kanan bawah, terbuka sebagai modal.
+  Sengaja tanpa daftar riwayat: ini jalan pintas untuk satu pertanyaan cepat.
+- **Menu Chat AI** (`/chat-ai`) — halaman penuh dengan daftar riwayat di kiri,
+  tempat percakapan lama dilanjutkan atau dihapus.
+
+Keduanya menulis ke kunci `localStorage` yang sama (`hg_chat_threads`), jadi
+percakapan yang dimulai dari quick chat muncul di halaman Chat AI dan sebaliknya.
+Widget mengambang disembunyikan saat sedang berada di `/chat-ai`.
 
 Penelusuran datanya jalan di peramban (data aplikasi ini memang sudah ada di
 sana, `src/mock`). `ai/handler.mjs` cuma proxy ke Ollama supaya kunci API tidak
 ikut ke bundel — ollama.com tidak mengirim header CORS, jadi peramban tidak bisa
 memanggilnya langsung.
-
-Riwayat percakapan disimpan di `localStorage` (belum ada backend).
 
 Ikut pembaruan pushhub:
 - **Grafik.** Minta "buat grafik …" dan jawabannya berupa blok ```` ```grafik ````
