@@ -12,6 +12,7 @@ import {
   HelpCircle,
   LogOut,
 } from 'lucide-react'
+import Footprint from '../Footprint'
 
 interface SidebarProps {
   activePage: string
@@ -100,6 +101,7 @@ export default function Sidebar({ activePage, onNavigate, onShowToast, onLogout 
         >
           <LogOut className="w-[18px] h-[18px]" />
         </button>
+        <Footprint varian="mark" />
       </div>
     </aside>
   )

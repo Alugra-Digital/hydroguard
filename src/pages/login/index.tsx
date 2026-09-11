@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
+import Footprint from '../../components/Footprint'
 
 interface LoginPageProps {
   onLogin: () => void
@@ -146,9 +147,12 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           </form>
 
           {/* Footer */}
-          <p className="text-[10.5px] text-zinc-600 text-center mt-6 leading-snug">
-            Sistem Peringatan Dini Banjir · BPBD Jakarta Selatan
-          </p>
+          <div className="mt-6 border-t border-[var(--border-main)] pt-4">
+            <p className="text-[10.5px] text-zinc-600 text-center leading-snug">
+              Sistem Peringatan Dini Banjir · BPBD Jakarta Selatan
+            </p>
+            <Footprint />
+          </div>
         </div>
       </div>
     </div>

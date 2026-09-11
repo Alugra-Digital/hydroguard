@@ -41,4 +41,6 @@ jobs:
              git -C '$VPS_PATH' pull --ff-only origin main
              cd '$VPS_STACK'
              docker compose up -d --build --no-deps hydroguard
-             docker compose ps"
+             docker compose ps
+             # quick clean: buang image dangling sisa build, biar disk VPS tidak penuh.
+             docker image prune -f"

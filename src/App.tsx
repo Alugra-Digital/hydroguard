@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import { CheckCircle } from 'lucide-react'
 import Sidebar from './components/layout/Sidebar'
 import TopBar  from './components/layout/TopBar'
+import ChatAI  from './components/ChatAI'
 
 import LoginPage             from './pages/login'
 import DashboardPage         from './pages/dashboard'
@@ -140,6 +141,8 @@ function AppLayout() {
           <Route path="*"                    element={<Navigate to="/command-center" replace />} />
         </Routes>
       </main>
+
+      <ChatAI />
     </div>
   )
 }
